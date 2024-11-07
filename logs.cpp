@@ -26,16 +26,9 @@ int main(){
     //configurando o endereço do servidor
     sockaddr_in serverAddr;
     serverAddr.sin_family = AF_INET;
-    serverAddr.sin_port = htons(443); //https
+    serverAddr.sin_port = htons(80); //http
     
-    //inet_pton(AF_INET, "192.168.56.1", &serverAddr.sin_addr); //ip do meu localhost
-    // Novo trecho para resolver "example.com"
-    hostent *host = gethostbyname("www.youtube.com");
-    if (host == nullptr) {
-        std::cerr << "Erro ao resolver o hostname." << std::endl;
-        return 1;
-    }
-    serverAddr.sin_addr = *((in_addr*)host->h_addr);
+    inet_pton(AF_INET, "192.168.56.1", &serverAddr.sin_addr); //ip do meu localhost
 
     //conectando ao servidor
     result = connect(connectSocket, (sockaddr*)&serverAddr, sizeof(serverAddr));
@@ -47,10 +40,7 @@ int main(){
     }
 
     //enviando uma requisição http GET
-    string request = "GET / HTTPS/1.1\r\n"
-                      "Host: www.youtube.com\r\n"
-                      "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.66 Safari/537.36\r\n"
-                      "Connection: close\r\n\r\n";
+    string request = "GET / HTTP/1.1\r\nHost: 192.168.56.1\r\nConnection: close\r\n\r\n";
     result = send(connectSocket, request.c_str(), request.length(), 0);
     if(result == SOCKET_ERROR){
         cerr << "Erro ao enviar: " << WSAGetLastError() << std::endl;
