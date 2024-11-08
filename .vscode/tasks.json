@@ -1,0 +1,26 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+	  {
+		"label": "Compilar com g++",
+		"command": "g++",
+		"args": [
+		  "-o", "log_npcap.exe",
+		  "log_npcap.cpp",
+		  "-I", "C:\\Users\\dilob\\Desktop\\insper\\semestres\\7_semestre\\techacker\\pf\\npcapsdk\\Include",
+		  "-L", "C:\\Users\\dilob\\Desktop\\insper\\semestres\\7_semestre\\techacker\\pf\\npcapsdk\\Lib\\x64",
+		  "-lws2_32",
+		  "-lwpcap"  // Use wpcap em vez de Packet
+		],
+		"type": "shell",
+		"group": {
+		  "kind": "build",
+		  "isDefault": true
+		},
+		"problemMatcher": ["$gcc"],
+		"detail": "Compilação com g++"
+	  }
+	]
+  }
+
+  
