@@ -6,18 +6,21 @@ app = Flask(__name__)
 log_file = "access.log"
 
 def parse_log_line(line):
-    log_pattern = r'(.+?) - (.+?):(\d+) -> (.+?):(\d+) - - \[(.+?)\] "(.*?) (.*?) HTTP/1.1" (\d+) (\d+)'
+    # Regex para capturar os campos do log
+    log_pattern = (
+        r'\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d+ - (?P<timestamp>\d+\.\d+) - (?P<ip_src>[0-9\.]+):(?P<port_src>\S+) -> (?P<ip_dest>[0-9\.]+):(?P<port_dest>\S+) - - '
+        r'\[(?P<protocol>[A-Z]+)\] - (?P<size>\d+) bytes'
+    )
     match = re.match(log_pattern, line)
     if match:
         return {
-            "timestamp": match.group(1),  # Data completa
-            "ip_src": match.group(2),     # Apenas o IP de origem
-            "port_src": match.group(3),   # Porta de origem
-            "ip_dest": match.group(4),    # IP de destino
-            "port_dest": match.group(5),  # Porta de destino
-            "resource": match.group(8),   # Recurso acessado
-            "status": match.group(9),     # Código de status HTTP
-            "size": f"{match.group(10)} bytes"  # Tamanho da requisição
+            "send_time": match.group("timestamp"),
+            "ip_src": match.group("ip_src"),
+            "port_src": match.group("port_src"),
+            "ip_dest": match.group("ip_dest"),
+            "port_dest": match.group("port_dest"),
+            "protocol": match.group("protocol"),
+            "size": match.group("size"),
         }
     return None
 
@@ -37,4 +40,5 @@ def home():
     return render_template("capture.html")
 
 if __name__ == "__main__":
+    print("Servidor iniciado! Acesse http://127.0.0.1:5000 para visualizar os logs.")
     app.run(debug=True)
