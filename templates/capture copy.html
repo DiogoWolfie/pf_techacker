@@ -41,12 +41,13 @@
     <table>
         <thead>
             <tr>
-                <th>Envio</th>
+                <th>Data</th>
                 <th>IP Origem</th>
                 <th>Porta Origem</th>
                 <th>IP Destino</th>
                 <th>Porta Destino</th>
-                <th>Protocolo</th>
+                <th>Recurso</th>
+                <th>Status</th>
                 <th>Tamanho</th>
             </tr>
         </thead>
@@ -56,33 +57,31 @@
 
     <script>
         async function fetchLogs() {
-            try {
-                const response = await fetch("/logs");
-                const logs = await response.json();
-                const tableBody = document.getElementById("log-table-body");
-                tableBody.innerHTML = ""; // Limpa a tabela antes de adicionar novos dados
-
-                logs.forEach(log => {
-                    const row = document.createElement("tr");
-                    row.innerHTML = `
-                        <td>${log.send_time}</td>
-                        <td>${log.ip_src}</td>
-                        <td>${log.port_src}</td>
-                        <td>${log.ip_dest}</td>
-                        <td>${log.port_dest}</td>
-                        <td>${log.protocol}</td>
-                        <td>${log.size} bytes</td>
-                    `;
-                    tableBody.appendChild(row);
-                });
-            } catch (error) {
-                console.error("Erro ao buscar logs:", error);
-            }
+            const response = await fetch("/logs");
+            const logs = await response.json();
+            const tableBody = document.getElementById("log-table-body");
+            tableBody.innerHTML = ""; // Limpa a tabela antes de adicionar novos dados
+    
+            logs.forEach(log => {
+                const row = document.createElement("tr");
+                row.innerHTML = `
+                    <td>${log.timestamp}</td>
+                    <td>${log.ip_src}</td>
+                    <td>${log.port_src}</td>
+                    <td>${log.ip_dest}</td>
+                    <td>${log.port_dest}</td>
+                    <td>${log.resource}</td>
+                    <td>${log.status}</td>
+                    <td>${log.size} bytes</td>
+                `;
+                tableBody.appendChild(row);
+            });
         }
-
+    
         // Atualiza os logs a cada 2 segundos
         setInterval(fetchLogs, 2000);
         fetchLogs(); // Atualiza imediatamente ao carregar a página
     </script>
+    
 </body>
 </html>

@@ -6,21 +6,18 @@ app = Flask(__name__)
 log_file = "access.log"
 
 def parse_log_line(line):
-    # Regex para capturar os campos do log
-    log_pattern = (
-        r'(?P<timestamp>\S+) - (?P<ip_src>\S+):(?P<port_src>\S+) -> (?P<ip_dest>\S+):(?P<port_dest>\S+) - - '
-        r'\[(?P<protocol>\S+)\] - (?P<size>\d+) bytes'
-    )
+    log_pattern = r'(.+?) - (.+?):(\d+) -> (.+?):(\d+) - - \[(.+?)\] "(.*?) (.*?) HTTP/1.1" (\d+) (\d+)'
     match = re.match(log_pattern, line)
     if match:
         return {
-            "send_time": match.group("timestamp"),
-            "ip_src": match.group("ip_src"),
-            "port_src": match.group("port_src"),
-            "ip_dest": match.group("ip_dest"),
-            "port_dest": match.group("port_dest"),
-            "protocol": match.group("protocol"),
-            "size": match.group("size"),
+            "timestamp": match.group(1),  # Data completa
+            "ip_src": match.group(2),     # Apenas o IP de origem
+            "port_src": match.group(3),   # Porta de origem
+            "ip_dest": match.group(4),    # IP de destino
+            "port_dest": match.group(5),  # Porta de destino
+            "resource": match.group(8),   # Recurso acessado
+            "status": match.group(9),     # Código de status HTTP
+            "size": f"{match.group(10)} bytes"  # Tamanho da requisição
         }
     return None
 
@@ -40,5 +37,4 @@ def home():
     return render_template("capture.html")
 
 if __name__ == "__main__":
-    print("Servidor iniciado! Acesse http://127.0.0.1:5000 para visualizar os logs.")
     app.run(debug=True)
