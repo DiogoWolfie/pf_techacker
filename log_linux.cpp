@@ -1,17 +1,19 @@
-#include <pcap.h>
 #include <iostream>
-#include <iomanip>
-#include <arpa/inet.h>  // Para inet_ntop no Linux
+#include <pcap.h>
+#include <netinet/ip.h>
+#include <netinet/tcp.h>
+#include <arpa/inet.h>
+#include <fstream>
+#include <sstream>
 #include <string>
 
-// Estrutura do cabeçalho Ethernet
+// Estruturas de cabeçalho Ethernet, IP e TCP
 struct EthernetHeader {
-    u_char destMac[6];
-    u_char srcMac[6];
+    u_char dest[6];
+    u_char src[6];
     u_short etherType;
 };
 
-// Estrutura do cabeçalho IPv4
 struct IPv4Header {
     u_char versionAndHeaderLength;
     u_char typeOfService;
@@ -20,38 +22,46 @@ struct IPv4Header {
     u_short flagsAndFragmentOffset;
     u_char timeToLive;
     u_char protocol;
-    u_short checksum;
+    u_short headerChecksum;
     u_char srcIp[4];
     u_char destIp[4];
 };
 
-// Estrutura do cabeçalho TCP
 struct TCPHeader {
     u_short srcPort;
     u_short destPort;
     u_int sequenceNumber;
-    u_int acknowledgmentNumber;
+    u_int ackNumber;
     u_char dataOffsetAndFlags;
     u_char flags;
-    u_short window;
+    u_short windowSize;
     u_short checksum;
     u_short urgentPointer;
 };
 
-// Função para imprimir o payload em um formato legível
+// Função para salvar conteúdo no HTML
+void save_to_html(const std::string& content) {
+    std::ofstream htmlFile("packets.html", std::ios::app);
+    if (!htmlFile.is_open()) {
+        std::cerr << "Erro ao abrir o arquivo HTML.\n";
+        return;
+    }
+
+    htmlFile << content;
+    htmlFile.close();
+}
+
+// Função para processar os pacotes capturados
 void packetHandler(u_char *userData, const struct pcap_pkthdr* pkthdr, const u_char* packet) {
-    // Ethernet Header
     auto* ethHeader = (EthernetHeader*) packet;
 
-    // Verifica se o pacote é IPv4
-    if (ntohs(ethHeader->etherType) == 0x0800) {
+    if (ntohs(ethHeader->etherType) == 0x0800) { // Verifica se é IPv4
         auto* ipHeader = (IPv4Header*) (packet + sizeof(EthernetHeader));
 
-        // Verifica se o protocolo é TCP
-        if (ipHeader->protocol == 6) { // TCP protocol number
+        if (ipHeader->protocol == 6) { // Verifica se é TCP
             auto* tcpHeader = (TCPHeader*) (packet + sizeof(EthernetHeader) + sizeof(IPv4Header));
 
-            // Calcula IPs e portas
+            // IPs e portas
             std::string srcIp = std::to_string(ipHeader->srcIp[0]) + "." + 
                                 std::to_string(ipHeader->srcIp[1]) + "." + 
                                 std::to_string(ipHeader->srcIp[2]) + "." + 
@@ -64,93 +74,93 @@ void packetHandler(u_char *userData, const struct pcap_pkthdr* pkthdr, const u_c
             u_short srcPort = ntohs(tcpHeader->srcPort);
             u_short destPort = ntohs(tcpHeader->destPort);
 
-            std::cout << "Conexão TCP Capturada!" << std::endl;
-            std::cout << "   Src IP: " << srcIp << ":" << srcPort << std::endl;
-            std::cout << "   Dest IP: " << destIp << ":" << destPort << std::endl;
-
-            // Calcula o início do payload TCP
+            // Cálculo do tamanho do payload
             int ipHeaderLen = (ipHeader->versionAndHeaderLength & 0x0F) * 4;
             int tcpHeaderLen = ((tcpHeader->dataOffsetAndFlags & 0xF0) >> 4) * 4;
             const u_char* payload = packet + sizeof(EthernetHeader) + ipHeaderLen + tcpHeaderLen;
             int payloadLen = pkthdr->len - (sizeof(EthernetHeader) + ipHeaderLen + tcpHeaderLen);
 
-            // Verifica se há payload (dados da aplicação)
+            // Determina o tipo de requisição
+            std::string requestType = "Não HTTP";
             if (payloadLen > 0) {
-                std::string data(reinterpret_cast<const char*>(payload), payloadLen);
-
-                std::cout << "Payload bruto capturado (" << payloadLen << " bytes): ";
-                for (int i = 0; i < payloadLen; ++i) {
-                std::cout << std::hex << std::setw(2) << std::setfill('0') << (int)payload[i] << " ";
+                std::string payloadStr(reinterpret_cast<const char*>(payload), payloadLen);
+                if (payloadStr.find("GET ") == 0 || payloadStr.find("POST ") == 0 || 
+                    payloadStr.find("PUT ") == 0 || payloadStr.find("DELETE ") == 0) {
+                    requestType = "HTTP Requisição";
+                } else if (payloadStr.find("HTTP/1.") == 0) {
+                    requestType = "HTTP Resposta";
                 }
-                std::cout << std::dec << std::endl;
-
-                // Verifica se é uma requisição HTTP
-                if (data.find("GET") == 0 || data.find("POST") == 0 || data.find("PUT") == 0 || data.find("DELETE") == 0) {
-                    std::string method = data.substr(0, data.find(" "));
-                    std::string url = data.substr(data.find(" ") + 1, data.find(" HTTP/") - data.find(" ") - 1);
-                    std::cout << "Requisição HTTP Capturada!" << std::endl;
-                    std::cout << "   Método: " << method << std::endl;
-                    std::cout << "   URL: " << url << std::endl;
-                }
-
-                // Verifica se é uma resposta HTTP
-                if (data.find("HTTP/") == 0) {
-                    std::string statusCode = data.substr(data.find(" ") + 1, 3);
-                    std::cout << "Resposta HTTP Capturada!" << std::endl;
-                    std::cout << "   Código de Status: " << statusCode << std::endl;
-                }
-            } else if (destPort == 443 || srcPort == 443) {
-                // Caso seja HTTPS
-                std::cout << "Conexão HTTPS detectada." << std::endl;
             }
+
+            // Monta o conteúdo para o HTML
+            std::ostringstream htmlContent;
+            htmlContent << "<tr>"
+                        << "<td>TCP</td>"
+                        << "<td>" << srcIp << "</td>"
+                        << "<td>" << srcPort << "</td>"
+                        << "<td>" << destIp << "</td>"
+                        << "<td>" << destPort << "</td>"
+                        << "<td>" << payloadLen << " bytes</td>"
+                        << "<td>" << requestType << "</td>"
+                        << "</tr>\n";
+
+            save_to_html(htmlContent.str());
+
+            // Exibição no terminal
+            std::cout << "Pacote TCP capturado: \n"
+                      << "  IP Origem: " << srcIp << "\n"
+                      << "  Porta Origem: " << srcPort << "\n"
+                      << "  IP Destino: " << destIp << "\n"
+                      << "  Porta Destino: " << destPort << "\n"
+                      << "  Tamanho do Payload: " << payloadLen << " bytes\n"
+                      << "  Tipo de Requisição: " << requestType << "\n\n";
         }
     }
 }
 
+// Função principal
 int main() {
-    char errorBuffer[PCAP_ERRBUF_SIZE];
-    pcap_if_t *interfaces, *device;
-    int count = 0;
+    char errbuf[PCAP_ERRBUF_SIZE];
+    pcap_if_t* devices;
 
-    // Lista todas as interfaces de rede disponíveis
-    if (pcap_findalldevs(&interfaces, errorBuffer) == -1) {
-        std::cerr << "Erro ao encontrar dispositivos: " << errorBuffer << std::endl;
+    if (pcap_findalldevs(&devices, errbuf) == -1) {
+        std::cerr << "Erro ao listar dispositivos: " << errbuf << "\n";
         return 1;
     }
 
-    // Mostra as interfaces e permite ao usuário escolher uma
-    int idx = 0;
-    for (device = interfaces; device != nullptr; device = device->next) {
-        std::cout << ++idx << ": " << device->name << " - " << (device->description ? device->description : "No description") << std::endl;
+    std::cout << "Dispositivos disponíveis:\n";
+    pcap_if_t* device;
+    for (device = devices; device; device = device->next) {
+        std::cout << "- " << device->name << "\n";
     }
-    
-    int selectedInterface = 0;
-    std::cout << "Escolha a interface (1-" << idx << "): ";
-    std::cin >> selectedInterface;
-    if (selectedInterface < 1 || selectedInterface > idx) {
-        std::cerr << "Interface inválida selecionada." << std::endl;
-        pcap_freealldevs(interfaces);
+
+    char deviceName[100];
+    std::cout << "\nDigite o nome do dispositivo para capturar pacotes: ";
+    std::cin >> deviceName;
+
+    pcap_t* handle = pcap_open_live(deviceName, BUFSIZ, 1, 1000, errbuf);
+    if (!handle) {
+        std::cerr << "Erro ao abrir o dispositivo: " << errbuf << "\n";
         return 1;
     }
 
-    // Seleciona a interface escolhida pelo usuário
-    device = interfaces;
-    for (int i = 1; i < selectedInterface; i++) {
-        device = device->next;
-    }
+    // Inicializa o arquivo HTML
+    std::ofstream htmlFile("packets.html");
+    htmlFile << "<html><head><title>Pacotes Capturados</title></head><body>\n";
+    htmlFile << "<table border='1'>\n";
+    htmlFile << "<thead><tr><th>Protocolo</th><th>IP Origem</th><th>Porta Origem</th>"
+             << "<th>IP Destino</th><th>Porta Destino</th><th>Tamanho do Payload</th>"
+             << "<th>Tipo de Requisição</th></tr></thead><tbody>\n";
+    htmlFile.close();
 
-    // Abre a interface de captura
-    pcap_t* handle = pcap_open_live(device->name, BUFSIZ, 1, 1000, errorBuffer);
-    if (handle == nullptr) {
-        std::cerr << "Erro ao abrir a interface: " << errorBuffer << std::endl;
-        pcap_freealldevs(interfaces);
-        return 1;
-    }
-
-    std::cout << "Iniciando captura de pacotes... Pressione Ctrl+C para parar." << std::endl;
+    // Captura pacotes
     pcap_loop(handle, 0, packetHandler, nullptr);
 
+    // Finaliza o HTML
+    htmlFile.open("packets.html", std::ios::app);
+    htmlFile << "</tbody></table></body></html>\n";
+    htmlFile.close();
+
     pcap_close(handle);
-    pcap_freealldevs(interfaces);
     return 0;
 }
