@@ -58,6 +58,9 @@
         async function fetchLogs() {
             try {
                 const response = await fetch("/logs");
+                if (!response.ok) {
+                    throw new Error(`Erro HTTP: ${response.status}`);
+                }
                 const logs = await response.json();
                 const tableBody = document.getElementById("log-table-body");
                 tableBody.innerHTML = ""; // Limpa a tabela antes de adicionar novos dados
@@ -76,7 +79,7 @@
                     tableBody.appendChild(row);
                 });
             } catch (error) {
-                console.error("Erro ao buscar logs:", error);
+                console.error("Erro ao buscar logs:", error.message);
             }
         }
 

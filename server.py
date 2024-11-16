@@ -8,8 +8,8 @@ log_file = "access.log"
 def parse_log_line(line):
     # Regex para capturar os campos do log
     log_pattern = (
-        r'(?P<timestamp>\S+) - (?P<ip_src>\S+):(?P<port_src>\S+) -> (?P<ip_dest>\S+):(?P<port_dest>\S+) - - '
-        r'\[(?P<protocol>\S+)\] - (?P<size>\d+) bytes'
+        r'\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d+ - (?P<timestamp>\d+\.\d+) - (?P<ip_src>[0-9\.]+):(?P<port_src>\S+) -> (?P<ip_dest>[0-9\.]+):(?P<port_dest>\S+) - - '
+        r'\[(?P<protocol>[A-Z]+)\] - (?P<size>\d+) bytes'
     )
     match = re.match(log_pattern, line)
     if match:
