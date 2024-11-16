@@ -54,6 +54,9 @@ struct TCPHeader {
 
 // Função para imprimir o payload em um formato legível
 void packetHandler(u_char *userData, const struct pcap_pkthdr* pkthdr, const u_char* packet) {
+    // Exibe o tamanho total do pacote capturado
+    std::cout << "Tamanho do pacote capturado: " << pkthdr->len << " bytes" << std::endl;
+
     // Ethernet Header
     auto* ethHeader = (EthernetHeader*) packet;
 
@@ -88,13 +91,16 @@ void packetHandler(u_char *userData, const struct pcap_pkthdr* pkthdr, const u_c
             const u_char* payload = packet + sizeof(EthernetHeader) + ipHeaderLen + tcpHeaderLen;
             int payloadLen = pkthdr->len - (sizeof(EthernetHeader) + ipHeaderLen + tcpHeaderLen);
 
+            // Exibe o tamanho do payload
+            std::cout << "Tamanho do payload: " << payloadLen << " bytes" << std::endl;
+
             // Verifica se há payload (dados da aplicação)
             if (payloadLen > 0) {
                 std::string data(reinterpret_cast<const char*>(payload), payloadLen);
 
                 std::cout << "Payload bruto capturado (" << payloadLen << " bytes): ";
                 for (int i = 0; i < payloadLen; ++i) {
-                std::cout << std::hex << std::setw(2) << std::setfill('0') << (int)payload[i] << " ";
+                    std::cout << std::hex << std::setw(2) << std::setfill('0') << (int)payload[i] << " ";
                 }
                 std::cout << std::dec << std::endl; // Volta para decimal
 
@@ -119,9 +125,8 @@ void packetHandler(u_char *userData, const struct pcap_pkthdr* pkthdr, const u_c
             }
         }
     }
-    //std::cout << "----------------------------------------" << std::endl;
+    std::cout << "----------------------------------------" << std::endl;
 }
-
 
 
 int main() {
