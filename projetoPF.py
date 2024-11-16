@@ -2,6 +2,9 @@ import logging
 import time
 from random import choice, randint
 
+# Limpa o arquivo de logs ao iniciar
+open("access.log", "w").close()
+
 logging.basicConfig(
     filename='access.log',
     level=logging.INFO,
@@ -9,45 +12,27 @@ logging.basicConfig(
 )
 
 def generate_log():
-    ip_address = f"192.168.0.{randint(1, 255)}"
+    ip_src = f"192.168.0.{randint(1, 255)}"
+    port_src = randint(1000, 65000)
+    ip_dest = "192.168.1.1"
+    port_dest = randint(1000, 65000)
     request_type = choice(["GET", "POST", "PUT", "DELETE"])
     resource = choice(["/index.html", "/about.html", "/login", "/contact", "/submit-form"])
     status_code = choice([200, 404, 500])
-    response_size = randint(100, 1000)  
-    
+    response_size = randint(100, 1000)
 
-    log_entry = f'{ip_address} - - [{time.strftime("%d/%b/%Y:%H:%M:%S")}] "{request_type} {resource} HTTP/1.1" {status_code} {response_size}'
+    log_entry = (f"{time.strftime('%Y-%m-%d %H:%M:%S')},000 - {ip_src}:{port_src} -> {ip_dest}:{port_dest} - - "
+                 f"[{time.strftime('%d/%b/%Y:%H:%M:%S')}] \"{request_type} {resource} HTTP/1.1\" {status_code} {response_size}")
     logging.info(log_entry)
     print(f"Log gerado: {log_entry}")
 
-
-def collect_logs(file_path):
-    try:
-        with open(file_path, 'r') as f:
-            logs = f.readlines()
-        return logs
-    except FileNotFoundError:
-        print("Arquivo de log não encontrado!")
-        return []
-
-
 def main():
-
-    for _ in range(10):  
-        generate_log()
-        time.sleep(2)
-
-
-    file_path = 'access.log'
-    logs = collect_logs(file_path)
-    
-
-    if logs:
-        print("\nLogs coletados:")
-        for log in logs:
-            print(log.strip())
-    else:
-        print("Nenhum log foi coletado.")
+    try:
+        while True:
+            generate_log()
+            time.sleep(2)
+    except KeyboardInterrupt:
+        print("Encerrando geração de logs.")
 
 if __name__ == "__main__":
     main()
