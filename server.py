@@ -6,14 +6,16 @@ app = Flask(__name__)
 log_file = "access.log"
 
 def parse_log_line(line):
-    # Regex para capturar os campos do log
+    # Regex. Tentei com tratamento de strings mas não funcionou tão bem
     log_pattern = (
-        r'\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d+ - (?P<timestamp>\d+\.\d+) - (?P<ip_src>[0-9\.]+):(?P<port_src>\S+) -> (?P<ip_dest>[0-9\.]+):(?P<port_dest>\S+) - - '
-        r'\[(?P<protocol>[A-Z]+)\] - (?P<size>\d+) bytes'
+        r'(?P<log_time>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d+) - (?P<timestamp>\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d+) - '
+        r'(?P<ip_src>[0-9\.]+):(?P<port_src>\d+) -> (?P<ip_dest>[0-9\.]+):(?P<port_dest>\d+) - - '
+        r'\[(?P<protocol>[A-Z]+)\] - (?P<size>\d+) bytes - (?P<http_method>[A-Z]+) - Status: (?P<http_status>\d+|N/A)'
     )
     match = re.match(log_pattern, line)
     if match:
         return {
+            "log_time": match.group("log_time"),
             "send_time": match.group("timestamp"),
             "ip_src": match.group("ip_src"),
             "port_src": match.group("port_src"),
@@ -21,6 +23,8 @@ def parse_log_line(line):
             "port_dest": match.group("port_dest"),
             "protocol": match.group("protocol"),
             "size": match.group("size"),
+            "http_method": match.group("http_method"),
+            "http_status": match.group("http_status"),
         }
     return None
 

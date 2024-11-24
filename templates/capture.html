@@ -48,6 +48,8 @@
                 <th>Porta Destino</th>
                 <th>Protocolo</th>
                 <th>Tamanho</th>
+                <th>Método HTTP</th>
+                <th>Status</th>
             </tr>
         </thead>
         <tbody id="log-table-body">
@@ -75,6 +77,8 @@
                         <td>${log.port_dest}</td>
                         <td>${log.protocol}</td>
                         <td>${log.size} bytes</td>
+                        <td>${log.http_method}</td>
+                        <td>${log.http_status}</td>
                     `;
                     tableBody.appendChild(row);
                 });
@@ -85,7 +89,7 @@
 
         // Atualiza os logs a cada 2 segundos
         setInterval(fetchLogs, 2000);
-        fetchLogs(); // Atualiza imediatamente ao carregar a página
+        fetchLogs();
     </script>
 </body>
 </html>
