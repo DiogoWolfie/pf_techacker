@@ -14,6 +14,8 @@ Falando em aplicação web, nesse projeto foi usado a biblioteca flask para essa
 
 Se o campo do método ou status aparecerem como unknown e N/A, respectivamente, é porque ele não identificiou uma requisição HTTP.
 
+Devido a permissões necessárias para acessar certos arquivos no computador, é extremamente recomendável que o usuário execute o programa como administrador.
+
 Espero que goste do resultado.
 
 
